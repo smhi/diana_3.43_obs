@@ -1,0 +1,100 @@
+
+#ifndef VcrossStyleWidget_h
+#define VcrossStyleWidget_h 1
+
+#include "diColourShading.h"
+#include "diPattern.h"
+#include "util/diKeyValue.h"
+
+#include <QStringList>
+#include <QWidget>
+
+#include <memory>
+#include <string>
+#include <vector>
+
+class Ui_VcrossStyleWidget;
+
+class VcrossStyleWidget : public QWidget {
+  Q_OBJECT
+
+public:
+  VcrossStyleWidget(QWidget* parent);
+  ~VcrossStyleWidget();
+
+  void setOptions(const miutil::KeyValue_v &fopt, const miutil::KeyValue_v &defaultopt);
+  const miutil::KeyValue_v& options() const;
+  bool valid() const;
+
+public Q_SLOTS:
+  void resetOptions();
+
+Q_SIGNALS:
+  void canResetOptions(bool enableReset);
+
+private:
+  void setupUi();
+
+  bool findFieldOption(size_t& nc, const std::string& key) const;
+  void disableFieldOptions();
+  void enableFieldOptions();
+  void updateFieldOptions(const std::string& name, const std::string& value);
+
+private Q_SLOTS:
+  void colorCboxActivated( int index );
+  void lineWidthCboxActivated( int index );
+  void lineTypeCboxActivated( int index );
+  void lineintervalCboxActivated( int index );
+  void densityCboxActivated( int index );
+  void vectorunitCboxActivated( int index );
+  void vectorscalexSboxChanged(const QString& value);
+  void vectorscaleySboxChanged(const QString& value);
+  void vectorthicknessChanged(int value);
+
+  void extremeValueCheckBoxToggled(bool on);
+  void extremeSizeChanged(int value);
+  void extremeLimitsChanged();
+  void lineSmoothChanged(int value);
+  void labelSizeChanged(int value);
+  void hourOffsetChanged(int value);
+  //void undefMaskingActivated(int index);
+  //void undefColourActivated(int index);
+  //void undefLinewidthActivated(int index);
+  //void undefLinetypeActivated(int index);
+  void zeroLineCheckBoxToggled(bool on);
+  void valueLabelCheckBoxToggled(bool on);
+  void tableCheckBoxToggled(bool on);
+  void repeatCheckBoxToggled(bool on);
+  void shadingChanged();
+  void patternComboBoxToggled(int index);
+  void patternColourBoxToggled(int index);
+  void alphaChanged(int index);
+  void zero1ComboBoxToggled();
+  void min1ComboBoxToggled();
+  void max1ComboBoxToggled();
+  void updatePaletteString();
+
+private:
+  std::unique_ptr<Ui_VcrossStyleWidget> ui;
+
+  miutil::KeyValue_v currentFieldOpts;
+  miutil::KeyValue_v defaultOptions;
+
+  std::vector<Colour::ColourInfo> colourInfo;
+  std::vector<ColourShading::ColourShadingInfo> csInfo;
+  std::vector<Pattern::PatternInfo> patternInfo;
+
+  std::vector<std::string> linetypes;
+  std::vector<std::string> lineintervals;
+  QStringList      densityStringList;
+  std::vector<std::string> vectorunit;
+  QStringList extremeLimits;
+
+  std::vector<std::string> undefMasking;
+
+  int        nr_colors;
+  int        nr_linewidths;
+  int        nr_linetypes;
+};
+
+#endif // VcrossStyleWidget_h

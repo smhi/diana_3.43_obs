@@ -1,0 +1,28 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh $@ --parallel
+
+.PHONY: override_dh_auto_configure
+override_dh_auto_configure:
+	./autogen.sh
+	./configure $(confflags) \
+	    --disable-silent-rules \
+	    --with-geotiff \
+            --enable-obs-bufr \
+            --enable-perl \
+	    --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+
+.PHONY: override_dh_auto_test
+override_dh_auto_test:
+	if dh_auto_test; then \
+	  echo "dh_auto_test was successful" ; \
+	else \
+	  make -C test display-testsuite-logs ; \
+	  false ; \
+	fi
+
+.PHONY: override_dh_strip
+override_dh_strip:
+	dh_strip -pdiana-@METNO_VERSION@ --dbg-package=diana-@METNO_VERSION@-dbg
