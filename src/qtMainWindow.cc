@@ -2244,7 +2244,21 @@ void DianaMainWindow::updateObs()
 {
   METLIBS_LOG_SCOPE();
   diutil::OverrideCursor waitCursor;
-  contr->updateObs();
+  if (doAutoUpdate) {
+    contr->updateObs();
+  } else {
+    om->getTimes();
+    if (contr->obsTimeListChanged())
+    {
+      // Jump to the newest obs file...
+      timeNavigator->setLastTimeStep();
+      miutil::miTime t= timeNavigator->selectedTime();
+      setPlotTime(t);
+      contr->obsTimeListUpdated();
+      timeNavigator->stepTimeForward();
+    }
+    contr->updateObs();
+  }
   requestBackgroundBufferUpdate();
 }
 

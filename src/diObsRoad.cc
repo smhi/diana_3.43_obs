@@ -326,39 +326,26 @@ void ObsRoad::readRoadData(RoadObsPlot *oplot)
   timeDiff= oplot->getTimeDiff();
   fileTime = filetime_;
 
-  Roaddata road = Roaddata(databasefile_, stationfile_, headerfile_, filetime_); 
-  map<std::string, vector<diStation> * >::iterator its = diStation::station_map.find(stationfile_);
-  if (its != diStation::station_map.end())
-  {
-	  stationlist = its->second;
+  lines.clear();
+  ifstream ifs(filename_.c_str(),ios::in);
+  char buf[1024];
+	if (ifs.is_open())
+	{ 
+	  while (ifs.good())
+		{
+			ifs.getline(buf,1024);
+			string str(buf);
+      miutil::trim(str);
+		  // Append every non empty line to lines
+      if (!str.empty())    
+       lines.push_back(str);
+		}
+		ifs.close();
   }
-  // FIXME: For now, does nothing...
-  road.open();
+	// decode the header part and data...
   
-  //vector<std::string> lines;
-	// FIXME: I think we must keep stations_to_plot!
-  map<int, std::string> lines_map;
-  // Members in the global stationlist that is not in the stations_to_plot list are not read from road
-  // This should improve performancestd::cerr << "Nextplot.size() " << nextplot.size() << std::endl;
-  const std::vector<int> & plot_stations = oplot->getStationsToPlot();
-  METLIBS_LOG_DEBUG("plot_stations.size() " << plot_stations.size());
-  road.getData(plot_stations, lines_map);
-	// FIXME: For now, does nothing...
-	road.close();
-
-	// decode the data...
-  int stnid;
-	std::string str;
-	map<int, std::string>::iterator it=lines_map.begin();	
-  for(;it!=lines_map.end(); it++) {
-		//FIXME: Stnid !!!!
-		//INDEX in station list
-	stnid = it->first;
-	str = it->second;
-	miutil::trim(str);
-		// Append every line to 
-		lines.push_back(str);
-	}
+  decodeHeader();
+  
 	separator = "|";
 
 	// remove the fake data....
@@ -784,7 +771,6 @@ void ObsRoad::decodeData()
     ii += 1;
   }
 
-  int index = 0;
   for (; ii < lines.size(); ++ii) {
     METLIBS_LOG_DEBUG("read '" << lines[ii] << "'");
 		//cerr << "read '" << lines[ii] << "'" << endl;
@@ -799,17 +785,23 @@ void ObsRoad::decodeData()
       pstr = miutil::split_protected(lines[ii], '"', '"');
 
     ObsData  obsData;
-		// Set metadata for station...
-		obsData.stringdata["data_type"] = (*stationlist)[index].station_type();
-		obsData.fdata["auto"] = (*stationlist)[index].environmentid();
-		obsData.fdata["isdata"] = (*stationlist)[index].data();
-    index ++;
     const size_t tmp_nColumn = std::min(pstr.size(), m_columnType.size());
     // fill both stringdata and fdata
     // stringdata
     for (size_t i=0; i<tmp_nColumn; i++) {
       if (not asciiColumnUndefined.count(pstr[i])) {
-        if (m_columnName[i] == "Cl" || m_columnName[i] == "Cm" ||  m_columnName[i] == "Ch") {
+        // Set metadata for station...
+        if (m_columnName[i] == "data_type") {
+          if (pstr[i] != undef_string)
+            obsData.stringdata[m_columnName[i]] = pstr[i];
+        } else if (m_columnName[i] == "auto") {
+          if (pstr[i] != undef_string)
+            obsData.fdata[m_columnName[i]] = miutil::to_float(pstr[i]);
+        } else if (m_columnName[i] == "isdata") {
+          if (pstr[i] != undef_string)
+            obsData.fdata[m_columnName[i]] = miutil::to_float(pstr[i]);
+          // End of metadata
+        } else if (m_columnName[i] == "Cl" || m_columnName[i] == "Cm" ||  m_columnName[i] == "Ch") {
           if (pstr[i] != undef_string)
             if (miutil::is_number(pstr[i])) {
               // Convert to the symbol dataspace
@@ -889,15 +881,22 @@ void ObsRoad::decodeData()
 	if (useTime) {
       miClock clock;
       miDate date;
+      int hour=0, min=0, sec=0;
       if (isoTime) {
         if (getColumnValue("time", pstr, text)) {
-          clock = miClock(text);
-	  } else {
+          METLIBS_LOG_DEBUG("time: " << text);
+          vector<std::string> tpart = miutil::split(text,":");
+          hour = miutil::to_int(tpart[0]);
+          if ( tpart.size() > 1 )
+            min = miutil::to_int(tpart[1]);
+          if ( tpart.size() > 2 )
+            sec = miutil::to_int(tpart[2]);
+          clock = miClock(hour, min, sec);
+        } else {
           METLIBS_LOG_WARN("time column missing");
           continue;
-	  }
-	  } else {
-        int hour=0, min=0, sec=0;
+        }
+      } else {
         if (getColumnValue("hour", pstr, hour)) {
           getColumnValue("min", pstr, min); // no problem if missing, assume min = sec = 00
           getColumnValue("sec", pstr, sec);
@@ -905,16 +904,17 @@ void ObsRoad::decodeData()
         } else {
           METLIBS_LOG_WARN("hour column missing");
           continue;
-	  }
-	  }
-	  
+        }
+      }
+
       if (isoDate) {
         if (getColumnValue("date", pstr, text)) {
+          METLIBS_LOG_DEBUG("date: " << text);
           date = miDate(text);
-	} else {
+        } else {
           METLIBS_LOG_WARN("date column missing");
           continue;
-	}
+        }
       } else if (allTime) {
         int year=0,month=0,day=0;
         if (getColumnValue("year", pstr, year) and getColumnValue("month", pstr, month) and getColumnValue("day", pstr, day)) {
@@ -922,10 +922,10 @@ void ObsRoad::decodeData()
         } else {
           METLIBS_LOG_WARN("year/month/day column missing");
           continue;
-      }
+        }
       } else  {
         date = filedate;
-    }
+      }
       obstime = miTime(date,clock);
       
       if (not allTime) {
@@ -937,8 +937,7 @@ void ObsRoad::decodeData()
       }
       
       METLIBS_LOG_DEBUG(LOGVAL(obstime) << LOGVAL(plotTime) << LOGVAL(timeDiff));
-
-      if (timeDiff < 0 || abs(miTime::minDiff(obstime, plotTime)) < timeDiff || (timeDiff == 0 && abs(miTime::minDiff(obstime, plotTime)) == 0))
+      if (timeDiff < 0 || abs(miTime::minDiff(obstime, plotTime))< timeDiff)
         obsData.obsTime = obstime;
       else
         continue;

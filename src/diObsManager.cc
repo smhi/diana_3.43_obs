@@ -182,13 +182,13 @@ bool ObsManager::prepare(ObsPlot * oplot, const miutil::miTime& time)
       }
 #ifdef ROADOBS
       else if (filetype =="roadobs") {
-        ObsRoad obsRoad(filename, pi.databasefile, pi.stationfile, pi.headerfile, finfo[j].time, dynamic_cast<RoadObsPlot*>(oplot), false);
+        ObsRoad obsRoad(filename, pi.databasefile, pi.stationfile, pi.headerfile, finfo[j].time, dynamic_cast<RoadObsPlot*>(oplot), true);
         // initData inits the internal data structures in oplot, eg the roadobsp and stationlist.
-        obsRoad.initData(dynamic_cast<RoadObsPlot*>(oplot));
+        //obsRoad.initData(dynamic_cast<RoadObsPlot*>(oplot));
         // readData reads the data from road.
         // it shoukle be complemented by a method on the ObsPlot objects that reads data from a single station from road,
         // after ObsPlt has computed wich stations to plot.
-        obsRoad.readData(dynamic_cast<RoadObsPlot*>(oplot));
+        //bsRoad.readData(dynamic_cast<RoadObsPlot*>(oplot));
       }
 #endif
     }
@@ -313,7 +313,7 @@ std::vector<ObsManager::FileInfo> ObsManager::getFileName(
   const int rangeMin = pi.timeRangeMin;
   const int rangeMax = pi.timeRangeMax;
   int found = -1;
-
+  std::vector<int> tdiff;
   //Find file where time is within filetime +/- timeRange (from setup)
   for (size_t i = 0; i < pi.fileInfo.size(); i++) {
     miTime t = pi.fileInfo[i].time;
@@ -321,8 +321,24 @@ std::vector<ObsManager::FileInfo> ObsManager::getFileName(
       METLIBS_LOG_WARN("No time defined:"<<pi.fileInfo[i].filename);
       continue;
     }
+    int d = miTime::minDiff(time, t);
+    tdiff.push_back(d);
+  }
+  int dmin=INT_MAX;
+  for (size_t i = 0; i < tdiff.size(); i++)
+  {
+    if (abs(tdiff[i]) < dmin)
+      dmin = abs(tdiff[i]);
+  }
+  for (size_t i = 0; i < pi.fileInfo.size(); i++) {
+    miTime t = pi.fileInfo[i].time;
+    if (t.undef()) {
+      METLIBS_LOG_WARN("No time defined:"<<pi.fileInfo[i].filename);
+      continue;
+    }
     const int d = miTime::minDiff(time, t);
-    if (d > rangeMin && d < rangeMax + 1) { // file found
+    // Bug, check for the nearest file !!!
+    if ((d > rangeMin) && (d < rangeMax + 1) && (abs(d) == dmin)) { // file found
       found = i;
       finfo.push_back(pi.fileInfo[i]);
       termin.push_back(t);
@@ -383,7 +399,7 @@ bool ObsManager::updateTimes(std::string obsType)
   // make a copy of the old fileinfo
   vector<FileInfo> oldfileInfo = Prod[obsType].fileInfo;
   Prod[obsType].fileInfo.clear();
-#ifdef ROADOBS
+#if 0
   // WMO (synop) reports 1 time per hour. ICAO (metar) reports ever 30 minutes (x.20, x.50)
   // Can we trust in obsType to select the right time intervall and obstime?
   if (Prod[obsType].obsformat == ofmt_roadobs)
@@ -472,7 +488,7 @@ bool ObsManager::updateTimes(std::string obsType)
         }
       }
     }
-#ifdef ROADOBS
+#if 0
   } // endif obstype == roadobs
 #endif
   // Check if timeLists are equal
@@ -492,7 +508,7 @@ bool ObsManager::updateTimes(std::string obsType)
 
 bool ObsManager::updateTimesFromRoadFile(ProdInfo& pi,vector<FileInfo> & oldfileInfo )
 {
-#ifdef ROADOBS
+#if 0
   // Due to the fact that we have a database instead of an archive, we
   // must fake the behavoir of an archive.  Assume that all stations
   // report every hour first, get the current time.
@@ -538,7 +554,7 @@ bool ObsManager::updateTimesfromFile(const std::string& obsType)
   vector<FileInfo> oldfileInfo;
   std::swap(pi.fileInfo, oldfileInfo);
 
-#ifdef ROADOBS
+#if 0
   if (pi.obsformat == ofmt_roadobs) {
     if (!updateTimesFromRoadFile(pi, oldfileInfo)) {
       std::swap(pi.fileInfo, oldfileInfo);
@@ -1166,6 +1182,8 @@ ObsDialogInfo ObsManager::updateDialog(const std::string& name)
   std::string stationfile = po.stationfile;
   std::string filename;// just dummy here
   miTime filetime;// just dummy here
+  
+  // We must call this for the dialog
   ObsRoad obsRoad = ObsRoad(filename,databasefile,stationfile,headerfile,filetime,NULL,false);
   bool found= obsRoad.asciiOK();
 
