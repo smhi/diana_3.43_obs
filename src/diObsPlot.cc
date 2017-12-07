@@ -1345,7 +1345,7 @@ bool ObsPlot::showpos_findObs(int xx, int yy)
 }
 
 void ObsPlot::setPopupSpec(std::vector<std::string>& txt)
-{
+{ 
   std::string datatype="";
   vector< std::string> data;
 
@@ -1381,14 +1381,12 @@ bool ObsPlot::getObsPopupText(int xx, int yy, std::string& setuptext)
   const int min_i = findObs(xx, yy);
   if (min_i < 0)
     return false;
-
   bool found = false;
   const ObsData& dt = obsp[min_i];
   for (const std::string& datatype : datatypes) {
     std::map<string, vector<std::string> >::const_iterator f_p = popupSpec.find(datatype);
     if (f_p == popupSpec.end())
       continue;
-
     found = true;
     const std::vector<std::string>& mdata = f_p->second;
     if (mdata.empty())
