@@ -97,6 +97,10 @@ public:
 
   void setPrinting(bool printing=true)
     { mPrinting = printing; }
+    
+  using DiGLCanvas::parseFontSetup;  
+  void parseFontSetup(const std::vector<std::string>& sect_fonts) Q_DECL_OVERRIDE;  
+
 
 private:
   bool setFontFace(FontFace face);
@@ -110,6 +114,7 @@ private:
 
   float mFontScaleX, mFontScaleY;
   QHash<QString,QString> fontMap;
+  QList<int> fontHandles;
 };
 
 class DiPaintGLPainter : public DiGLPainter
