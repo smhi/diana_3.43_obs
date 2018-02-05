@@ -3082,6 +3082,8 @@ int diana_dealloc()
 
   delete glpainter;
   delete glcanvas;
+  
+  delete application;
 
   return DIANA_OK;
 }
