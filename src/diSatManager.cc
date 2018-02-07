@@ -971,9 +971,11 @@ void SatManager::listFiles(subProdInfo &subp)
   fileListChanged = false;
 
   //if not in archiveMode and archive files are included, clear list
-  if (!useArchive && subp.archiveFiles)
+  if (!useArchive && subp.archiveFiles) {
+    METLIBS_LOG_DEBUG("clear subp.file");
     subp.file.clear();
-
+  }
+  
   for (unsigned int j=0; j<subp.pattern.size() ;j++) {
     //skip archive files if not in archive mode
     if (subp.archive[j] && !useArchive)
@@ -983,6 +985,23 @@ void SatManager::listFiles(subProdInfo &subp)
     if (matches.empty()) {
       METLIBS_LOG_ERROR("No files found! " << subp.pattern[j]);
     }
+    // Remove files no longer on disk
+    std::vector<SatFileInfo>::iterator p = subp.file.begin();
+    for (; p!=subp.file.end();) {
+       bool found = false;
+       for (diutil::string_v::const_reverse_iterator it = matches.rbegin(); it != matches.rend(); ++it) {
+         if (*it == p->name) {
+           found = true;
+           break;
+         }
+       }
+       if (!found) {
+         p = subp.file.erase(p);
+         fileListChanged = true;
+       } else {
+         p++;
+       }
+    }  
     for (diutil::string_v::const_reverse_iterator it = matches.rbegin(); it != matches.rend(); ++it) {
       //remember that archive files are read
       if (subp.archive[j])
@@ -1005,7 +1024,7 @@ void SatManager::listFiles(subProdInfo &subp)
           newfile=false;
           //find out when this file was last updated
           unsigned long modtime = _modtime(ft.name);
-          if (modtime >= subp.updateTime) {
+          if (modtime > subp.updateTime) {
             //special case - file has been changed since last updated
             //but read header
             //	     METLIBS_LOG_DEBUG("SPECIAL CASE"<<ft.name);
@@ -1063,12 +1082,12 @@ void SatManager::listFiles(subProdInfo &subp)
             subp.file.insert(p, ft);
         }
       }
-    }
+    } // End matches
   }
 
   //save time of last update
   subp.updateTime = miTime::secDiff(now, ztime);
-
+  if (fileListChanged) {
   if (subp.formattype == "mitiff") {
     //update Prod[satellite][file].colours
     //Asumes that all files have same palette
@@ -1096,6 +1115,7 @@ void SatManager::listFiles(subProdInfo &subp)
     }
   }
 #endif
+  } // end fileListChanged
   //METLIBS_LOG_DEBUG(fileListChanged);
 }
 

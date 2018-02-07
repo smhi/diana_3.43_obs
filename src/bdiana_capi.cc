@@ -3075,15 +3075,20 @@ int diana_dealloc()
   if(movieMaker)
     endVideo();
 
-  delete vprofmanager;
-  delete spectrummanager;
-  delete main_controller;
+  if (vprofmanager)
+    delete vprofmanager;
+  if (spectrummanager)
+    delete spectrummanager;
+  if (main_controller)
+    delete main_controller;
   vcrossmanager = vcross::QtManager_p();
-
-  delete glpainter;
-  delete glcanvas;
+  if (glpainter)
+    delete glpainter;
+  if (glcanvas)
+    delete glcanvas;
   
-  delete application;
+  if (application)
+    delete application;
 
   return DIANA_OK;
 }
