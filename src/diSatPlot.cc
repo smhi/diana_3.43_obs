@@ -136,6 +136,12 @@ void SatPlot::plot(DiGLPainter* gl, PlotOrder porder)
 
 void SatPlot::rasterPixels(int n, const diutil::PointD &xy0, const diutil::PointD &dxy, QRgb* pixels)
 {
+  if (!isEnabled())
+    return;
+
+  if(satdata == NULL || satdata->image == NULL || !satdata->approved)
+    return;
+  
   const int nx = satdata->area.nx, ny = satdata->area.ny;
 
   const diutil::PointD fxy0(satdata->area.R().x1, satdata->area.R().y1);

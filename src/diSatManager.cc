@@ -554,18 +554,20 @@ void SatManager::setRGB(Sat* satdata)
   unsigned char colmap[3][colmapsize];
 
   if (satdata->image)
-		delete[] satdata->image;
+		delete [] satdata->image;
 	satdata->image= new unsigned char[size*4];
 
-  if (satdata->rawimage[0] == NULL) {
+  if (satdata->rawimage[0] == 0) {
     for (int k=0; k<3; k++)
       for (int i=0; i<size; i++)
         satdata->image[i*4+k] = 0;
     return;
   }
-
-	if (satdata->formatType == "geotiff")
-	  satdata->image = satdata->rawimage[0];
+  // The pointer to rawimage data are set to image, the actual data are not copied
+	if (satdata->formatType == "geotiff") {
+	  delete [] satdata->image;
+    satdata->image = satdata->rawimage[0];
+  }
 	else {
 	  // Start in lower left corner instead of upper left.
 	  //satdata->image = new unsigned char[size*4];
@@ -617,8 +619,10 @@ void SatManager::setRGB(Sat* satdata)
 
 	  }
 
-	  if (satdata->formatType == "geotiff")
-	    satdata->rawimage[0] = NULL;
+	  // We must not delete rawimage here, image pointer points to this also
+    if (satdata->formatType == "geotiff") {
+      satdata->rawimage[0] = 0;
+    }
 
 	}
 

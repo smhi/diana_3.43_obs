@@ -522,16 +522,18 @@ void Sat::cleanup()
   area.nx = 0;
   area.ny = 0;
 
-  delete[] image;
+  delete [] image;
   image = 0;
 
   for (int i=0; i<maxch; i++) {
-    delete[] rawimage[i];
+    if (rawimage[i] != 0)
+      delete [] rawimage[i];
     rawimage[i]= 0;
   }
 
   for(int j=0; j<3; j++) {
-    delete[] origimage[j];
+    if (origimage[j] != 0)
+      delete [] origimage[j];
     origimage[j] = 0;
   }
 

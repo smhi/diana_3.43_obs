@@ -223,7 +223,8 @@ int metno::GeoTiff::read_diana(const std::string& infile, unsigned char *image[]
     //       printf("Air = %f Bir = %f  %s\n",  ginfo.AIr,  ginfo.BIr, ginfo.cal_ir.c_str() );
 
 
-    image[1] = (unsigned char *) malloc(ginfo.ysize*ginfo.xsize);
+    //image[1] = (unsigned char *) malloc(ginfo.ysize*ginfo.xsize);
+    image[1] = new unsigned char[ginfo.xsize*ginfo.ysize];
     int nStrips = TIFFNumberOfStrips(in);
     int s = 0;
     int tiles = TIFFNumberOfTiles(in);
@@ -293,7 +294,8 @@ int metno::GeoTiff::read_diana(const std::string& infile, unsigned char *image[]
   }
 
   // RGBA buffer
-  image[0] = (unsigned char *) malloc((size)*4);
+  image[0]= new unsigned char[size*4];
+  //image[0] = (unsigned char *) malloc((size)*4);
   memset(image[0], 0, size*4);
 
   status = TIFFGetField(in, TIFFTAG_COMPRESSION, &compression);
